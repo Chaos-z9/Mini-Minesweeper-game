@@ -22,75 +22,99 @@ int main()
 {
     initgraph(350,350,EX_SHOWCONSOLE);
     loadResource();
-    int map[ROW][COL];
-    init(map);
+    srand((unsigned)time(NULL));
 
     BeginBatchDraw();
-    draw(map);
-    FlushBatchDraw();
 
-    int state = 0;  //0=进行中，1=胜利，-1=失败
-    //游戏主循环
-    while(state==0)
+    //一局结束后询问是否再来，点“否”就退出
+    while(true)
     {
-        ExMessage msg;
-        bool changed = false;
-        //处理消息
-        while(peekmessage(&msg,EX_MOUSE))
+        int map[ROW][COL];
+        init(map);
+
+        draw(map);
+        FlushBatchDraw();
+
+        int state = 0;  //0=进行中，1=胜利，-1=失败
+        //游戏主循环
+        while(state==0)
         {
-            //只处理鼠标按下事件
-            if(msg.message==WM_LBUTTONDOWN || msg.message==WM_RBUTTONDOWN)
+            ExMessage msg;
+            bool changed = false;
+            //处理消息
+            while(peekmessage(&msg,EX_MOUSE))
             {
-                mouseMsg(&msg,map);
-                changed = true;
-                //左键翻开格子后判断输赢
-                if(msg.message==WM_LBUTTONDOWN)
+                //只处理鼠标按下事件
+                if(msg.message==WM_LBUTTONDOWN || msg.message==WM_RBUTTONDOWN)
                 {
-                    int c = msg.x / 35;
-                    int r = msg.y / 35;
-                    state = judge(map,r,c);
-                    //已经分出胜负，不再处理这次积压的其它点击
-                    if(state!=0)
+                    mouseMsg(&msg,map);
+                    changed = true;
+                    //左键翻开格子后判断输赢
+                    if(msg.message==WM_LBUTTONDOWN)
                     {
-                        break;
+                        int c = msg.x / 35;
+                        int r = msg.y / 35;
+                        state = judge(map,r,c);
+                        //已经分出胜负，不再处理这次积压的其它点击
+                        if(state!=0)
+                        {
+                            break;
+                        }
                     }
                 }
             }
-        }
-        //有操作才重绘，避免空转占满 CPU
-        if(changed)
-        {
-            draw(map);
-            FlushBatchDraw();
-        }
-        Sleep(10);
-    }
-
-    //游戏结束：失败时把所有雷翻开，胜利时把所有雷插旗
-    for(int i=0;i<ROW;i++)
-    {
-        for(int k=0;k<COL;k++)
-        {
-            if(map[i][k]==19 || map[i][k]==39)
+            //有操作才重绘，避免空转占满 CPU
+            if(changed)
             {
-                map[i][k] = (state==1) ? 39 : -1;
+                draw(map);
+                FlushBatchDraw();
+            }
+            Sleep(10);
+        }
+
+        //游戏结束：失败时把所有雷翻开，胜利时把所有雷插旗
+        for(int i=0;i<ROW;i++)
+        {
+            for(int k=0;k<COL;k++)
+            {
+                if(map[i][k]==19 || map[i][k]==39)
+                {
+                    map[i][k] = (state==1) ? 39 : -1;
+                }
             }
         }
+        draw(map);
+        FlushBatchDraw();
+
+        //在窗口上显示输赢结果
+        setfillcolor(WHITE);
+        solidrectangle(0,150,350,200);
+        setbkmode(TRANSPARENT);
+        settextcolor(state==-1 ? RGB(200,0,0) : RGB(0,150,0));
+        const char* text = (state==-1) ? "GAME OVER" : "YOU WIN";
+        outtextxy((350-textwidth(text))/2, 160, text);
+        FlushBatchDraw();
+
+        cout << (state==-1 ? "GAME OVER!" : "YOU WIN!") << endl;
+
+        //弹窗询问是否再来一局
+        int ret;
+        if(state==1)
+        {
+            ret = MessageBoxW(GetHWnd(), L"恭喜通关！要不要再试一把？", L"扫雷", MB_YESNO | MB_ICONQUESTION);
+        }
+        else
+        {
+            ret = MessageBoxW(GetHWnd(), L"踩到雷了！要不要再试一次？", L"扫雷", MB_YESNO | MB_ICONQUESTION);
+        }
+        if(ret != IDYES)
+        {
+            break;
+        }
+        system("cls");
     }
-    draw(map);
-    FlushBatchDraw();
 
-    //在窗口上显示输赢结果
-    setfillcolor(WHITE);
-    solidrectangle(0,150,350,200);
-    setbkmode(TRANSPARENT);
-    settextcolor(state==-1 ? RGB(200,0,0) : RGB(0,150,0));
-    const char* text = (state==-1) ? "GAME OVER" : "YOU WIN";
-    outtextxy((350-textwidth(text))/2, 160, text);
-    FlushBatchDraw();
-
-    cout << (state==-1 ? "GAME OVER!" : "YOU WIN!") << endl;
-    getchar();
+    closegraph();
     return 0;
 }
 
@@ -109,7 +133,6 @@ void show(int map[ROW][COL])
 
 void init(int map[ROW][COL])
 {
-    srand((unsigned)time(NULL));
     for(int i=0;i<ROW;i++)
     {
         for(int j=0;j<COL;j++)
