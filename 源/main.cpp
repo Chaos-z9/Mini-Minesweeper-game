@@ -2,21 +2,27 @@
 #include<cstdlib>
 #include<ctime>
 #include<iomanip>
+#include<string>
 #include<easyx.h>
 
 #define ROW 10
 #define COL 10
 #define MineNum 10
+IMAGE imgs[12];
 using namespace std;
 
 void init(int map[ROW][COL]);
 void show(int map[ROW][COL]);
+void draw(int map[ROW][COL]);
+void loadResource();
 int main()
 {
-    initgraph(350,350);
+    initgraph(350,350,EX_SHOWCONSOLE);
+    loadResource();
     int map[ROW][COL];
     init(map);
     show(map);
+    draw(map);
     getchar();
     return 0;
 }
@@ -79,4 +85,32 @@ void init(int map[ROW][COL])
     }
 }
 
+void loadResource()
+{
+    for(int i=0;i<12;i++)
+    {
+        std::string path = "..\\images\\" + std::to_string(i) + ".png";
+        if(loadimage(&imgs[i], path.c_str()) != 0)
+        {
+            std::cout << "load failed: " << path << std::endl;
+        }
+    }
+}
 
+void draw(int map[ROW][COL])
+{
+    for(int i=0;i<ROW;i++)
+    {   
+        for(int k=0;k<COL;k++)
+        {
+            if(map[i][k]>=0 &&map[i][k]<=8)
+            {
+                putimage(k*35,i*35,&imgs[map[i][k]]);
+            }
+            else if(map[i][k]==-1)
+            {
+                putimage(k*35,i*35,&imgs[9]);
+            }
+        }
+    }
+}
