@@ -17,6 +17,7 @@ void draw(int map[ROW][COL]);
 void loadResource();
 void mouseMsg(ExMessage* msg,int map[][COL]);
 void boomBlank(int map[ROW][COL],int row,int col);
+int judge(int map[ROW][COL],int row,int col);
 int main()
 {
     initgraph(350,350,EX_SHOWCONSOLE);
@@ -28,8 +29,9 @@ int main()
     draw(map);
     FlushBatchDraw();
 
+    int state = 0;  //0=进行中，1=胜利，-1=失败
     //游戏主循环
-    while(true)
+    while(state==0)
     {
         ExMessage msg;
         bool changed = false;
@@ -41,6 +43,18 @@ int main()
             {
                 mouseMsg(&msg,map);
                 changed = true;
+                //左键翻开格子后判断输赢
+                if(msg.message==WM_LBUTTONDOWN)
+                {
+                    int c = msg.x / 35;
+                    int r = msg.y / 35;
+                    state = judge(map,r,c);
+                    //已经分出胜负，不再处理这次积压的其它点击
+                    if(state!=0)
+                    {
+                        break;
+                    }
+                }
             }
         }
         //有操作才重绘，避免空转占满 CPU
@@ -51,6 +65,32 @@ int main()
         }
         Sleep(10);
     }
+
+    //游戏结束：失败时把所有雷翻开，胜利时把所有雷插旗
+    for(int i=0;i<ROW;i++)
+    {
+        for(int k=0;k<COL;k++)
+        {
+            if(map[i][k]==19 || map[i][k]==39)
+            {
+                map[i][k] = (state==1) ? 39 : -1;
+            }
+        }
+    }
+    draw(map);
+    FlushBatchDraw();
+
+    //在窗口上显示输赢结果
+    setfillcolor(WHITE);
+    solidrectangle(0,150,350,200);
+    setbkmode(TRANSPARENT);
+    settextcolor(state==-1 ? RGB(200,0,0) : RGB(0,150,0));
+    const char* text = (state==-1) ? "GAME OVER" : "YOU WIN";
+    outtextxy((350-textwidth(text))/2, 160, text);
+    FlushBatchDraw();
+
+    cout << (state==-1 ? "GAME OVER!" : "YOU WIN!") << endl;
+    getchar();
     return 0;
 }
 
@@ -227,6 +267,35 @@ void boomBlank(int map[ROW][COL],int row,int col)
     }
 }
 
-
-
+//游戏结束条件
+int judge(int map[ROW][COL],int row,int col)
+{
+    //越界保护
+    if(row<0||row>=ROW||col<0||col>=COL)
+    {
+        return 0;
+    }
+    //点到了雷，游戏结束
+    if(map[row][col]==-1||map[row][col]==19)
+    {
+        return -1;
+    }
+    //统计已翻开的数字格，全部翻开则胜利
+    int cnt=0;
+    for(int i=0;i<ROW;i++)
+    {
+        for(int k=0;k<COL;k++)
+        {
+            if(map[i][k]>=0 && map[i][k]<=8)
+            {
+                ++cnt;
+            }
+        }
+    }
+    if(ROW*COL-MineNum==cnt)
+    {
+        return 1;
+    }
+    return 0;
+}
 
